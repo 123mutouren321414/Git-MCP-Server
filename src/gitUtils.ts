@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 export interface MergeInfo {
   sourceBranch: string;
@@ -11,37 +11,37 @@ export interface MergeInfo {
 }
 
 export class GitUtils {
-  static executeGit(command: string, repoPath: string): string {
-    try {
-      return execSync(command, { cwd: repoPath, encoding: 'utf8' }).toString().trim();
-    } catch (error) {
-      throw new Error(`Git error: ${(error as Error).message}`);
-    }
+  static executeGit(args: string[], repoPath: string): string {  
+    try {  
+      return execFileSync('git', args, { cwd: repoPath, encoding: 'utf8' }).toString().trim();  
+    } catch (error) {  
+      throw new Error(`Git error: ${(error as Error).message}`);  
+    }  
   }
 
-  static getCurrentBranch(repoPath: string): string {
-    return this.executeGit('git branch --show-current', repoPath);
+  static getCurrentBranch(repoPath: string): string {  
+    return this.executeGit(['branch', '--show-current'], repoPath);  
   }
 
-  static getMainBranch(repoPath: string): string {
-    try {
-      this.executeGit('git show-ref --verify refs/heads/master', repoPath);
-      return 'master';
-    } catch {
-      return 'main';
-    }
+  static getMainBranch(repoPath: string): string {  
+    try {  
+      this.executeGit(['show-ref', '--verify', 'refs/heads/master'], repoPath);  
+      return 'master';  
+    } catch {  
+      return 'main';  
+    }  
   }
 
   static getMergeInfo(repoPath: string, fromBranch: string, toBranch: string): MergeInfo {
-    const filesOutput = this.executeGit(
-      `git diff --name-only ${fromBranch}..${toBranch}`,
-      repoPath
-    );
+    const filesOutput = this.executeGit(  
+      ['diff', '--name-only', `${fromBranch}..${toBranch}`],  
+      repoPath  
+    ); 
     const filesChanged = filesOutput ? filesOutput.split('\n').filter(f => f.trim()) : [];
 
-    const statsOutput = this.executeGit(
-      `git diff --numstat ${fromBranch}..${toBranch}`,
-      repoPath
+    const statsOutput = this.executeGit(  
+      ['diff', '--numstat', `${fromBranch}..${toBranch}`],  
+      repoPath  
     );
     
     let insertions = 0;
@@ -57,9 +57,9 @@ export class GitUtils {
       });
     }
 
-    const commitsOutput = this.executeGit(
-      `git rev-list --count ${fromBranch}..${toBranch}`,
-      repoPath
+    const commitsOutput = this.executeGit(  
+      ['rev-list', '--count', `${fromBranch}..${toBranch}`],  
+      repoPath  
     );
     const commits = parseInt(commitsOutput) || 0;
 
@@ -87,14 +87,14 @@ export class GitUtils {
     }
 
     try {
-      const ahead = this.executeGit(
-        `git rev-list --count ${baseBranch}..${currentBranch}`,
-        repoPath
+      const ahead = this.executeGit(  
+        ['rev-list', '--count', `${baseBranch}..${currentBranch}`],  
+        repoPath  
       );
       
-      const behind = this.executeGit(
-        `git rev-list --count ${currentBranch}..${baseBranch}`,
-        repoPath
+      const behind = this.executeGit(  
+        ['rev-list', '--count', `${currentBranch}..${baseBranch}`],  
+        repoPath  
       );
 
       const aheadCount = parseInt(ahead) || 0;
@@ -127,9 +127,9 @@ export class GitUtils {
 
   static getFileDiff(repoPath: string, filename: string, fromBranch: string, toBranch: string): string {
     try {
-      return this.executeGit(
-        `git diff ${fromBranch}..${toBranch} -- "${filename}"`,
-        repoPath
+      return this.executeGit(  
+        ['diff', `${fromBranch}..${toBranch}`, '--', filename],  
+        repoPath  
       );
     } catch (error) {
       throw new Error(`Failed to get diff for file ${filename}: ${(error as Error).message}`);
